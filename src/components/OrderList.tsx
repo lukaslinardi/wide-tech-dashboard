@@ -28,21 +28,13 @@ const OrderList = (props: Props) => {
   const { setIsModalOpen, carts, setCarts } = props;
   const queryClient = useQueryClient();
 
-  const [taskTab, setTaskTab] = useState(1);
+  const [tab, setTab] = useState(1);
   const [offset, setOffset] = useState(0);
 
   const { data: cartsList } = useQuery({
     queryKey: ["cart-list", offset],
     queryFn: () => getCarts(offset, FETCH_LIMIT),
   });
-
-  const pageCount = useMemo(() => {
-    if (cartsList && cartsList !== undefined) {
-      return Math.ceil(cartsList.totalElements / FETCH_LIMIT);
-    } else {
-      return 0;
-    }
-  }, [cartsList]);
 
   const { mutate: mutateCreateCarts } = useMutation({
     mutationFn: createOrder,
@@ -59,25 +51,27 @@ const OrderList = (props: Props) => {
       <div className="w-[100%]">
         <div className="flex justify-between items-center">
           <Tabs
-            value={taskTab}
-            onChange={(_, newValue: number) => setTaskTab(newValue)}
+            value={tab}
+            onChange={(_, newValue: number) => setTab(newValue)}
           >
             <Tab label="Carts" value={1} />
             <Tab label="Purchased List" value={2} />
           </Tabs>
-          <button
-            className="py-2 px-5 bg-blue-500 text-white font-bold rounded-md"
-            onClick={() => setIsModalOpen(true)}
-          >
-            Buy Stuff
-          </button>
+          {tab === 1 ? (
+            <button
+              className="py-2 px-5 bg-blue-500 text-white font-bold rounded-md"
+              onClick={() => setIsModalOpen(true)}
+            >
+              Buy Stuff
+            </button>
+          ) : null}
         </div>
-        {carts.length === 0 ? (
-          <div className="flex m-3 justify-center">
-            <p>tidak ada cart</p>
-          </div>
-        ) : (
-          <div className={taskTab === 2 ? `hidden` : ""}>
+        <div className={tab === 2 ? `hidden` : ""}>
+          {carts.length === 0 ? (
+            <div className="flex m-3 justify-center">
+              <p>tidak ada cart</p>
+            </div>
+          ) : (
             <div>
               <TableContainer component={Paper}>
                 <Table sx={{ minWidth: 650 }} aria-label="simple table">
@@ -114,28 +108,28 @@ const OrderList = (props: Props) => {
                   </TableBody>
                 </Table>
               </TableContainer>
+              <div className="flex justify-end mr-5 my-3">
+                <p>
+                  Total : Rp.{" "}
+                  {carts
+                    .reduce((acc, product) => {
+                      return acc + product.quantity * product.price;
+                    }, 0)
+                    .toLocaleString()}
+                </p>
+              </div>
+              <div className="flex justify-end mr-5">
+                <button
+                  className="py-2 px-5 bg-blue-500 text-white font-bold rounded-md"
+                  onClick={() => mutateCreateCarts(carts)}
+                >
+                  Place Order
+                </button>
+              </div>
             </div>
-            <div className="flex justify-end mr-5 my-3">
-              <p>
-                Total : Rp.{" "}
-                {carts
-                  .reduce((acc, product) => {
-                    return acc + product.quantity * product.price;
-                  }, 0)
-                  .toLocaleString()}
-              </p>
-            </div>
-            <div className="flex justify-end mr-5">
-              <button
-                className="py-2 px-5 bg-blue-500 text-white font-bold rounded-md"
-                onClick={() => mutateCreateCarts(carts)}
-              >
-                Place Order
-              </button>
-            </div>
-          </div>
-        )}
-        <div className={taskTab === 1 ? `hidden` : ""}>
+          )}
+        </div>
+        <div className={tab === 1 ? `hidden` : ""}>
           <div>
             {cartsList && cartsList !== undefined ? (
               <TableContainer component={Paper}>
@@ -175,12 +169,15 @@ const OrderList = (props: Props) => {
               </TableContainer>
             ) : null}
           </div>
-            <div className="flex justify-center">
+          {cartsList && cartsList !== undefined ? (
+            <div className="flex justify-center mt-3">
               <Pagination
-                count={pageCount}
+                count={cartsList.totalPages}
                 onChange={(_, value) => setOffset(value)}
+                color="primary"
               />
             </div>
+          ) : null}
         </div>
       </div>
     </div>
